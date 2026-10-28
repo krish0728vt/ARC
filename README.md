@@ -3,12 +3,12 @@
 
 > **Project Status:** Concept design and engineering planning in progress. Hardware, drivetrain, PCB, and AI performance are not yet validated.
 
-![ARC Robot Concept](hero.png)
+![ARC Robot Concept](hero(1).png)
 
 ## Project Owner
 
 **Name:** Krish Shah  
-**Virginia Tech Email:** [Enter your VT email]
+**Virginia Tech Email:** krish0728@vt.edu
 
 ## Project Overview
 
