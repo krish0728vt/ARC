@@ -359,7 +359,7 @@ The directory structure will be created and updated as the project develops.
 
 ## Project Image
 
-![ARC — Autonomous Robotic Companion](hero.png)
+![ARC — Autonomous Robotic Companion](hero(1).png)
 
 The current image represents the preliminary design concept of ARC.
 
