@@ -1,374 +1,264 @@
-
 # ARC — Autonomous Robotic Companion
 
-> **Project Status:** Concept design and engineering planning in progress. Hardware, drivetrain, PCB, and AI performance are not yet validated.
+**A compact, expressive, tracked robot exploring embedded electronics, 3D-printed mechanisms, and self-hosted AI.**
 
-![ARC Robot Concept](hero(1).png)
+![ARC — current concept render](hero.png)
+
+> **Development status — October 2026:** Architecture selected; component integration, power delivery, drivetrain, charging, firmware, and local AI are **not yet bench-verified**. The cover image is a **concept illustration**, not a photo or validated CAD model. The final enclosure will have an **entirely backward-sloping front face** and may differ from the illustration.
 
 ## Project Owner
 
-**Name:** Krish Shah  
-**Virginia Tech Email:** krish0728@vt.edu
+**Krish Shah**  
+Virginia Tech  
+**Contact:** [krish0728@vt.edu](mailto:krish0728@vt.edu)
 
 ## Project Overview
 
-**ARC (Autonomous Robotic Companion)** is a compact, AI-powered mobile robot designed to see, listen, speak, express emotions, and move around its environment. The goal of this project is to develop an interactive robotic companion by combining embedded systems, mechanical design, electronics, robotics, and locally hosted artificial intelligence.
+**ARC (Autonomous Robotic Companion)** is a personal engineering project to build a small, rechargeable robot that can **listen, talk, see, display expressions, and move** using two independently driven, real continuous tracks. It brings together embedded systems, robotics, CAD and 3D printing, battery-powered electronics, and locally hosted artificial intelligence.
 
-ARC will feature a fully 3D-printed, cube-shaped body approximately **10–12 cm tall**, with a backward-sloping front face. A **full-color display** will show animated eyes and facial expressions, allowing the robot to communicate emotions and respond visually during conversations. A small, fixed camera mounted above the body will provide visual input, while **two independently controlled continuous tank tracks** will enable movement and turning.
+The design uses a compact **wedge-shaped, cube-inspired enclosure** with a front face that slopes backward to angle its animated display upward. The target remains approximately **10–12 cm in height**, subject to real component fit and track geometry. A 2-inch color touchscreen will display ARC's facial expressions, while a built-in camera below the display will provide visual input. The earlier concept of a separate camera head is **not part of this design**.
 
-The robot will use a **Seeed Studio XIAO ESP32-S3 Sense** microcontroller to manage its onboard hardware, including the camera, microphone, display, speaker, Wi-Fi connectivity, and motor controls.
+ARC is designed to spend most of its time on a **magnetic-contact charging dock**, respond to interaction, and leave the dock for short, controlled movements. **Manual docking comes first**; independently finding and returning to the dock is a later engineering objective, not a finished capability.
 
-More demanding AI processing will be performed on an **external Raspberry Pi 3 Model B+**, connected wirelessly over Wi-Fi. The Raspberry Pi will handle lightweight speech recognition, language processing, and speech generation. A separate computer may optionally provide additional processing power when available.
+Onboard control will use the **M5Stack CoreS3**. A separate **Raspberry Pi**, located **off the robot** and connected by Wi-Fi, is planned to host the local AI services. An optional external computer can help with more demanding processing when available. The intended core system will run on **free and open-source software**, without a required paid AI service or third-party AI API key.
 
-A major objective is to develop the system using **free, open-source, locally hosted AI software**, without requiring paid cloud services or third-party AI API keys.
+**Engineering codename:** `CUBE-01` — used in design files and technical documentation. ARC is the project title; the robot's eventual character name is still open.
 
-The final goal is to create a functional, rechargeable, and interactive robot with expressive animations, conversational capabilities, visual awareness, and safe autonomous or remotely controlled movement.
+## Project Goals
+
+- **Expressive interaction:** Animated eyes and facial states for idle, listening, thinking, speaking, charging, low battery, and connection status.
+- **Voice conversation:** Capture audio onboard, process speech through a local service, and play spoken responses through ARC's speaker.
+- **Visual awareness:** Capture images using the CoreS3 camera, with image understanding dependent on suitable external AI processing.
+- **Real tracked movement:** Drive two independently controlled continuous side tracks, prioritizing slow, deliberate motion and torque over speed.
+- **Rechargeable docking:** Support a stationary magnetic-contact charging cradle; add autonomous return and electrical charge confirmation in a later phase.
+- **Local-first AI:** Keep speech recognition, language processing, and speech synthesis local wherever feasible.
+- **Reproducible engineering:** Document hardware revisions, CAD, software, wiring, measurements, failures, and design decisions.
+
+## System Architecture
+
+```text
+                     ARC — ONBOARD ROBOT
+             +----------------------------------+
+             | M5Stack CoreS3 (ESP32-S3)        |
+             | 2-inch touch face + camera      |
+             | microphones + speaker + Wi-Fi   |
+             | sensors + onboard safety logic  |
+             +----------------+-----------------+
+                              |
+                          M5Bus / I2C
+                              |
+             +----------------v-----------------+
+             | M138-V11 4EncoderMotor module    |
+             | left/right channels + encoders  |
+             +----------------+-----------------+
+                              |
+                 Pololu gearmotors (2x)
+                              |
+                 REAL CONTINUOUS TRACKS
+
+             +----------------------------------+
+             | A014-D Battery Bottom3 (500mAh)  |
+             | contact charging via A016 base  |
+             +----------------------------------+
+                              |
+                       Wi-Fi / local LAN
+                              |
+             +----------------v-----------------+
+             | OFFBOARD RASPBERRY PI            |
+             | speech recognition + AI + TTS   |
+             | local server / conversation     |
+             +----------------+-----------------+
+                              |
+                  Optional external computer
+                       (when available)
+```
+
+*This diagram shows the **planned logical architecture**, not an approved electrical power tree or validated physical stack. Motor power and the contact-charging path still require testing.*
+
+## Current Hardware Selection
+
+The following parts are the **selected prototype architecture**, **not confirmed purchases or tested integration**.
+
+| Component | Qty. | Intended role | Status |
+|---|---:|---|---|
+| [M5Stack CoreS3 — K128](https://docs.m5stack.com/en/core/CoreS3) (regular version) | 1 | ESP32-S3 controller; 2-inch 320 × 240 touch display; camera, dual microphones, speaker, Wi-Fi and sensors | **Selected — untested** |
+| [M5Stack 4EncoderMotor v1.1 — M138-V11](https://docs.m5stack.com/en/module/Module_4EncoderMotor_v1.1) | 1 | Motor driver with encoder feedback; two of four channels planned for the tracks | **Selected — untested** |
+| [M5GO Battery Bottom3 — A014-D](https://docs.m5stack.com/en/base/Base_M5GO_Bottom3) | 1 | 3.7 V, 500 mAh onboard battery module and underside charging contacts | **Selected — power capacity unverified** |
+| [M5GO Charging Base — A016](https://docs.m5stack.com/en/base/Base_M5GO_Charger) | 1 | Stationary **magnetic-contact** charging base; **not inductive/Qi charging** | **Selected — docked operation unverified** |
+| [Pololu #5122 encoded 380:1 LP 6 V gearmotor](https://www.pololu.com/product/5122) | 2 | Slow, high-reduction drive for left and right tracks | **Selected — tracked-load performance untested** |
+| [Pololu #4762 encoder cable](https://www.pololu.com/product/4762) | 2 | Motor and encoder connection; requires a verified connector adapter to M138-V11 | **Selected — harness mapping pending** |
+| Printed track assemblies, sprockets, idlers and tensioners | 2 assemblies | Genuine continuous tracked locomotion | **CAD/mechanics to be developed** |
+| External Raspberry Pi | 1 | Local speech, AI and control server over Wi-Fi | **Architecture confirmed — pipeline untested** |
+| Optional external computer | As available | Additional AI/vision processing | **Optional** |
+
+The CoreS3 already contains the screen, camera, microphones, and speaker hardware. This design **does not require the separate display, camera head, audio amplifier, or standalone controller from earlier prototypes**.
+
+### CoreS3 features relevant to ARC
+
+- **Display:** 2-inch full-color touchscreen for the animated face.
+- **Camera:** Integrated GC0308 camera located **beneath the display**, not in a raised camera pod.
+- **Audio:** Dual built-in microphones and onboard speaker for two-way voice interaction.
+- **Connectivity:** Wi-Fi for communication with the offboard Pi.
+- **Sensors:** Built-in near-field proximity/ambient light sensing, IMU, and power-management functions. Proximity sensing is **not** a reliable cliff detector or complete obstacle-avoidance system.
+
+## Mechanical Design and 3D Printing
+
+ARC's enclosure and track mechanism are intended to be predominantly 3D printed. The main visual requirements are:
+
+- A compact, clean **cube/wedge silhouette** with the **whole front face sloping backward**.
+- A neatly integrated CoreS3 display and the camera opening beneath it.
+- **Two functional continuous tracks**, each powered independently, not decorative track covers over wheels.
+- Low-speed motion with provision for sprockets, idler axles/bearings, track guides, and tension adjustment.
+- Organized wiring, accessible USB/power controls, and a serviceable enclosure.
+- A chassis underside and docking cradle designed around the charging-contact position.
+
+**Proposed materials:** PLA for early fit-checks, PETG for structural parts, and TPU or articulated printed links for tracks. The actual belt pitch, sprockets, tolerances, mounts and track support bearings still need design and testing.
+
+Earlier OpenSCAD models under `CUBE-01` were made for a **different electronics arrangement**. They are retained as visual/history references only. **A new CoreS3-based mechanical model is needed** before manufacturing-ready STL files can be claimed.
+
+## Movement and Safety
+
+Each side will use one encoded Pololu gearmotor and one continuous track. Differential control should enable forward/reverse motion, steering, and eventually pivot turns, subject to verified traction and motor torque.
+
+A safety-first control system is planned to:
+
+- Keep motors **stopped by default** at boot, reset, and power or communication faults.
+- Enforce short, bounded movement commands with a watchdog/timeout.
+- Stop on lost control connectivity and support an accessible manual stop/power-off path.
+- Measure motor-startup, loaded-turn, and stall behavior before selecting final power arrangements.
+
+**No dedicated cliff/drop sensors are planned for the initial build.** Testing will therefore be limited to **supervised, flat, contained areas away from stairs and ledges**. The integrated proximity sensor must not be treated as fall prevention.
+
+## Charging Dock
+
+The selected charging concept pairs the **A014-D Battery Bottom3** with the **A016 magnetic-contact charging base**. When docked, ARC should be able to remain in its usual resting location, show charging/idle animations, and eventually support conversation while powered. These simultaneous use-and-charge behaviors are still **engineering goals requiring electrical verification**.
+
+The dock design needs to account for the fact that the track treads contact the floor while charging contacts are underneath the body. Initial alignment will be **manual**, followed later by a guided approach, homing cues, safe contact alignment, and confirmation that charging actually started. Autonomous docking is **not yet implemented**.
+
+## Firmware, AI and Networking
+
+### Onboard firmware
+
+ARC will use customized ESP32-S3 firmware, exploring [Xiaozhi ESP32](https://github.com/78/xiaozhi-esp32) as the core and [Face for Xiaozhi](https://github.com/TechTalkies/Face-for-Xiaozhi) for expressions where compatible with CoreS3. Planned onboard responsibilities include:
+
+- Display animation and expression state.
+- Microphone capture, speaker playback, and camera capture.
+- Secure local Wi-Fi connection to the external Pi.
+- I2C motor control, encoder feedback, battery status, and default-STOP behavior.
+- Basic local status/controls even if the AI service is unavailable.
+
+### Offboard Pi and optional computer
+
+The **Raspberry Pi remains external to the rover**. It is planned to handle the robot-facing local server, speech recognition, compact language processing, text-to-speech, and conversation state. An optional computer can perform heavier inference when available, with the Pi acting as the stable network endpoint.
+
+Software being evaluated includes [Vosk](https://alphacephei.com/vosk/) for speech recognition, [llama.cpp](https://github.com/ggml-org/llama.cpp) for lightweight local models, and [eSpeak NG](https://github.com/espeak-ng/espeak-ng) for speech synthesis. Communication will follow a documented Xiaozhi-compatible protocol where feasible. **No integrated offline voice loop or performance benchmark has been completed yet.**
 
 ## What I Hope to Learn
 
-Through this project, I hope to gain practical experience in several areas of electrical engineering, computer engineering, and robotics.
+Through ARC, I want to build hands-on experience in:
 
-### 1. Embedded Systems and Firmware Development
-- Programming and configuring the ESP32-S3 microcontroller.
-- Integrating cameras, microphones, speakers, and displays.
-- Developing firmware for real-time hardware control.
-- Implementing communication between embedded devices.
+1. **Embedded systems:** ESP32-S3 firmware, audio/video peripherals, touchscreen graphics, real-time control, and Wi-Fi communication.
+2. **Power electronics and PCB design:** Battery/current limits, charger behavior, motor driver integration, protective circuits, harnesses, and measurement-driven design. A small custom PCB may be considered later if necessary; one is not assumed at this stage.
+3. **Mechanical design:** Parametric CAD, 3D printing, tracked drivetrain design, material choice, tolerances, assembly, and servicing.
+4. **Robotics:** Differential drive, rotary encoders, traction, torque, control loops, fail-safe stops, and later dock approach.
+5. **AI systems:** Self-hosted ASR, text generation, TTS, local networking, voice-tool control, and resource-constrained inference.
+6. **System engineering:** Revising a design from actual test data, documenting failures, and validating the complete interaction between subsystems.
 
-### 2. PCB and Electronics Design
-- Designing custom printed circuit boards using electronic design software.
-- Integrating motor drivers, power management, charging circuits, and sensors.
-- Understanding battery protection, voltage regulation, and power distribution.
-- Testing and debugging electronic circuits.
+## Development Roadmap
 
-### 3. Mechanical Design and 3D Printing
-- Developing parametric CAD models for robotic systems.
-- Designing compact enclosures and mechanical assemblies.
-- Creating functional tank tracks, sprockets, and motor mounts.
-- Understanding tolerances, material selection, and mechanical constraints.
-
-### 4. Robotics and Motion Control
-- Implementing differential-drive locomotion.
-- Controlling DC gearmotors through motor driver circuits.
-- Developing safe motion-control algorithms.
-- Understanding mechanical load, torque, traction, and motor efficiency.
-
-### 5. Artificial Intelligence and Networking
-- Integrating locally hosted speech recognition and text-to-speech systems.
-- Exploring lightweight language models.
-- Connecting embedded hardware to an external AI server over Wi-Fi.
-- Developing interactive voice-controlled robotic behaviors.
-- Understanding the hardware limitations of running AI models locally.
-
-### 6. System Integration and Testing
-- Combining mechanical, electrical, and software subsystems.
-- Troubleshooting hardware and software compatibility issues.
-- Evaluating power consumption, response time, and reliability.
-- Improving the design through prototyping and engineering validation.
-
-## Design and Implementation
-
-ARC is currently in the preliminary engineering design stage. The following sections describe the planned system architecture and components.
-
-### 1. Mechanical Design
-
-The robot will have a compact, fully 3D-printed body with a futuristic appearance inspired by small AI companion robots.
-
-**Main design features:**
-
-- Approximately 100–120 mm overall height.
-- Cube-like enclosure with a backward-sloping front face.
-- Full-color animated display integrated into the front.
-- Small fixed camera module positioned above the body.
-- Two continuous tank tracks mounted along the sides.
-- Independently driven left and right tracks.
-- Removable rear panel for electronics access.
-- Internal mounting structures for the battery, PCB, and motors.
-- Compact and organized wiring.
-
-The preliminary design has been created using **OpenSCAD** under the earlier engineering codename CUBE-01.
-
-The existing CAD model represents the initial mechanical layout and component packaging. The drivetrain, mounting arrangements, and manufacturing tolerances still require further development and testing.
-
-### 2. Electrical and Hardware Design
-
-The main onboard controller will be the **Seeed XIAO ESP32-S3 Sense**, selected for its compact size, Wi-Fi capabilities, integrated microphone, and camera support.
-
-**Proposed hardware components:**
-
-| Component | Purpose |
-|---|---|
-| XIAO ESP32-S3 Sense | Main onboard microcontroller |
-| Waveshare 2-inch ST7789 LCD | Animated eyes and facial expressions |
-| Integrated camera module | Image capture and visual input |
-| Integrated microphone | Voice input |
-| MAX98357A amplifier | Digital audio output |
-| Miniature speaker | Voice responses and sound effects |
-| Two N20 DC gearmotors | Left and right track movement |
-| Motor driver circuits | Independent motor speed and direction control |
-| Rechargeable LiPo battery | Portable power supply |
-| Battery charging circuit | Safe battery charging |
-| Battery fuel gauge | Battery monitoring |
-| Custom PCB | Integrated electrical connections and power distribution |
-
-The final motor drivers, battery, and power-management components will be selected after electrical measurements and component testing.
-
-A custom PCB will eventually replace temporary prototype wiring to create a compact, reliable, and serviceable system.
-
-### 3. Display and Facial Animation
-
-One of ARC's primary features will be its animated face.
-
-The robot will use a full-color LCD mounted on its sloped front surface.
-
-Planned facial expressions include:
-
-- Idle and blinking
-- Listening
-- Thinking
-- Speaking
-- Happy
-- Curious
-- Confused
-- Sleeping
-- Low battery
-- Disconnected
-
-The animation system will be developed using concepts and reusable components from the open-source **Face for Xiaozhi** project.
-
-### 4. Camera and Computer Vision
-
-ARC will feature a small, fixed camera mounted above its main body.
-
-The camera will be angled slightly upward to observe its surroundings.
-
-Planned capabilities include:
-
-- Capturing images.
-- Sending images over Wi-Fi.
-- Processing visual information through an external computer.
-- Answering questions about objects or surroundings when compatible vision AI is available.
-
-Advanced computer vision will initially depend on external processing hardware.
-
-### 5. Tank Track Locomotion
-
-ARC will move using two continuous tank tracks.
-
-Each track will be independently controlled by a miniature DC gearmotor, enabling:
-
-- Forward movement
-- Reverse movement
-- Left and right turns
-- Pivot turns
-- Variable-speed movement
-
-The track mechanism will be designed for 3D printing, with potential use of flexible TPU tracks and rigid printed sprockets.
-
-The final mechanism will require testing to determine suitable motor torque, track tension, traction, and mechanical durability.
-
-### 6. Software and AI Architecture
-
-ARC will use a distributed processing system.
-
-**Onboard ESP32-S3:**
-
-- Hardware control
-- Display animations
-- Microphone and speaker interfaces
-- Camera capture
-- Motor control
-- Wi-Fi communication
-- Basic safety functions
-
-**External Raspberry Pi 3B+:**
-
-- Local speech recognition
-- Lightweight language-model processing
-- Text-to-speech generation
-- Conversation management
-- Communication with the robot
-
-**Optional external PC:**
-
-- More capable language models
-- Advanced speech processing
-- Image understanding
-- Additional AI computation
-
-The Raspberry Pi will remain external to the robot and communicate over Wi-Fi.
-
-The software will be based on open-source projects, including:
-
-- Xiaozhi ESP32
-- Face for Xiaozhi
-- ESP-IDF
-- llama.cpp
-- Vosk
-- eSpeak NG
-
-The goal is to provide local AI functionality without requiring paid cloud APIs.
-
-Due to the Raspberry Pi 3B+'s limited 1 GB RAM, AI performance and response times will need to be evaluated experimentally.
-
-### 7. Testing and Validation
-
-Development will be divided into smaller hardware and software tests before complete integration.
-
-Planned testing includes:
-
-- LCD display initialization and animation.
-- Microphone audio capture.
-- Speaker audio playback.
-- Camera image capture.
-- ESP32 Wi-Fi communication.
-- Raspberry Pi AI processing.
-- Motor driver functionality.
-- Track movement and traction.
-- Battery charging and power consumption.
-- Complete voice interaction.
-- Integrated system reliability.
-
-Final PCB fabrication and full mechanical assembly will follow successful subsystem validation.
-
-## Bill of Materials
-
-The following table contains the preliminary components planned for the project. Exact quantities, component models, and prices may change as development progresses.
-
-| Item | Quantity | Estimated Cost | Link |
-|---|---:|---:|---|
-| Seeed XIAO ESP32-S3 Sense | 1 | TBD | [Seeed Studio](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/) |
-| Waveshare 2-inch ST7789 Color LCD | 1 | TBD | [Waveshare](https://www.waveshare.com/product/2inch-lcd-module.htm) |
-| N20 DC Gearmotors | 2 | TBD | TBD |
-| DRV8830 Motor Drivers (provisional) | 2 | TBD | [Texas Instruments](https://www.ti.com/product/DRV8830) |
-| MAX98357A Audio Amplifier | 1 | TBD | [Analog Devices](https://www.analog.com/en/products/max98357a.html) |
-| Miniature Speaker | 1 | TBD | TBD |
-| Rechargeable Protected LiPo Battery | 1 | TBD | TBD |
-| Battery Charging Circuit | 1 | TBD | [BQ24074](https://www.ti.com/product/BQ24074) |
-| Battery Fuel Gauge | 1 | TBD | [MAX17048](https://www.analog.com/en/products/max17048.html) |
-| Custom PCB | 1 | TBD | TBD |
-| Connectors, Switches, and Fasteners | As needed | TBD | TBD |
-| PLA/PETG/TPU 3D Printing Filament | As needed | TBD | TBD |
-| Raspberry Pi 3 Model B+ | 1 | Already Owned | [Raspberry Pi](https://www.raspberrypi.com/products/raspberry-pi-3-model-b-plus/) |
-
-**Estimated Total Cost:** TBD
-
-The total estimated project cost will be updated after final component selection and supplier pricing.
-
-## Timeline and Milestones
-
-| Milestone | Target Date | Status |
+| Phase | Main deliverable | Current status |
 |---|---|---|
-| Project planning and research | October 2026 | In Progress |
-| Preliminary mechanical and electrical design | October–November 2026 | In Progress |
-| ESP32 display and audio prototype | TBD | Not Started |
-| Camera and Wi-Fi integration | TBD | Not Started |
-| Raspberry Pi AI server development | TBD | Not Started |
-| Motor control and track development | TBD | Not Started |
-| Battery and power-system testing | TBD | Not Started |
-| Custom PCB design and fabrication | TBD | Not Started |
-| Full robot assembly | TBD | Not Started |
-| Final integration and testing | TBD | Not Started |
-| Project completion | TBD | Not Started |
+| **0 — Architecture and integration audit** | Confirm exact parts, three-module stack feasibility, motor power path, connector mapping and charger operation requirements | **In progress** |
+| **1 — CoreS3 bench bring-up** | Display/face, microphones, speaker, camera, Wi-Fi and telemetry smoke tests | Not verified |
+| **2 — Motor and track prototype** | Both encoded motors and real printed tracks move under bounded safe commands | Not started |
+| **3 — Battery and magnetic-contact dock** | Measured motor/battery limits and repeatable safe contact charging, including powered-on behavior | Not verified |
+| **4 — Local AI integration** | Pi-based speech-to-speech loop and CoreS3 protocol connection without paid APIs | Not verified |
+| **5 — Revised CAD and assembly** | CoreS3-specific internal layout, functional drivetrain, serviceable chassis and dock | Not started |
+| **6 — Future autonomous docking** | Locate dock, approach safely, align and electrically confirm charge | Future goal |
+| **7 — System validation** | Repeatable safety, motion, battery, thermal, and voice tests | Future goal |
+
+### Key engineering questions still open
+
+1. **Stack compatibility:** Can CoreS3 K128, M138-V11, and Bottom3 A014-D physically and electrically operate together in the proposed order?
+2. **Motor supply:** Can the 500 mAh battery and its available power rails handle the CoreS3 plus two motors during startup, turning and faults without unsafe drops or overheating?
+3. **Powered-on docking:** Can the A016 contact base safely charge the battery while ARC is active, and how will charging be confirmed?
+4. **Track mechanics:** What real torque, current, axle support and track tension are needed for reliable turning on an indoor floor?
+5. **Software integration:** Which CoreS3 firmware/graphics revisions and lightweight local AI pipeline work reproducibly on the actual hardware?
+
+These are **test gates**, not claims of working functionality. No parts in the new CoreS3 prototype stack have been confirmed ordered, received, or bench-tested in the current project record.
 
 ## Progress Log
 
-### 2026-10-28 — Initial Project Planning
+### 2026-10-28 — Core design direction selected
 
-**Completed:**
+- Defined the ARC companion-robot concept and `CUBE-01` engineering codename.
+- Confirmed the wedge/cube form, **entirely sloped front**, 2-inch animated face, and two **real independent tracks**.
+- Selected the integrated **CoreS3 K128** direction rather than separate screen/audio/camera assemblies.
+- Selected **M138-V11**, **A014-D**, **A016**, two **Pololu #5122** motors and two **#4762** cables **for evaluation**.
+- Established an **offboard Pi over Wi-Fi**, optional external computer, and free/local AI objective.
+- Defined manual contact docking as the first charging step, with autonomous return as a later goal.
+- Identified power, stacking, encoder harness and charging as immediate validation priorities.
 
-- Defined the initial concept and objectives of the AI companion robot.
-- Selected the project name **ARC — Autonomous Robotic Companion**.
-- Established the approximate robot size and physical design.
-- Selected a cube-like body with a backward-sloping front surface.
-- Chose a full-color animated display for facial expressions.
-- Selected a small, fixed camera configuration.
-- Decided to use continuous tank tracks for movement.
-- Identified the XIAO ESP32-S3 Sense as the main onboard controller.
-- Selected the existing Raspberry Pi 3B+ as the external AI processing device.
-- Established the goal of locally hosted, open-source AI.
-- Developed preliminary 3D CAD concepts and internal component layouts.
-- Identified the main electrical, mechanical, and software design challenges.
+### 2026-10-29 — README brought into line with current design
 
-**Next Steps:**
+- Replaced the obsolete electronics descriptions with the selected CoreS3-based architecture.
+- Clarified the integrated camera location, real tracked-drive design, local AI, and contact-charge dock.
+- Kept the Pi description **model-independent** and retained the original cover illustration as conceptual artwork.
+- No new hardware purchase, firmware build, electrical measurement, CAD fit, or successful dock test is claimed by this documentation update.
 
-- Verify hardware compatibility and component dimensions.
-- Begin ESP32-S3 and color-display prototyping.
-- Test microphone, speaker, and camera functionality.
-- Develop and evaluate the local Raspberry Pi AI architecture.
-- Continue refining the mechanical design.
+## Repository Organization
 
-## Project Files
-
-The repository will contain all major project files as development progresses.
-
-**Planned repository organization:**
+The intended repository structure is shown below. **Folders are a plan until created and populated.**
 
 ```text
 ARC/
 ├── README.md
 ├── hero.png
-│
 ├── cad/
-│   ├── models/
-│   ├── printable-parts/
-│   └── assembly/
-│
+│   ├── cores3-chassis/
+│   ├── tracks/
+│   └── dock/
 ├── hardware/
-│   ├── schematics/
-│   ├── pcb/
-│   ├── datasheets/
-│   └── bom/
-│
+│   ├── bom/
+│   ├── wiring-and-pinouts/
+│   ├── power-tests/
+│   └── pcb/                  # only if validated and needed
 ├── firmware/
-│   ├── esp32/
-│   ├── display/
-│   ├── audio/
-│   └── motor-control/
-│
+│   └── cube01-cores3/
 ├── server/
-│   ├── raspberry-pi/
-│   ├── speech/
-│   └── ai/
-│
+│   ├── pi/
+│   └── optional-pc/
 └── docs/
-    ├── design-notes/
-    ├── testing/
-    └── progress/
+    ├── architecture/
+    ├── test-results/
+    ├── decision-log/
+    └── historical-designs/
 ```
 
-The directory structure will be created and updated as the project develops.
+## References
 
-## Useful Links
+**Hardware and integration**
 
-### Hardware Documentation
+- [M5Stack CoreS3 documentation](https://docs.m5stack.com/en/core/CoreS3)
+- [M5Stack 4EncoderMotor v1.1 documentation](https://docs.m5stack.com/en/module/Module_4EncoderMotor_v1.1)
+- [M5Stack Battery Bottom3 documentation](https://docs.m5stack.com/en/base/Base_M5GO_Bottom3)
+- [M5Stack battery-bottom charging base](https://docs.m5stack.com/en/base/Base_M5GO_Charger)
+- [M5Stack compatible-stack reference](https://docs.m5stack.com/en/compatible_stack)
+- [Pololu #5122 gearmotor](https://www.pololu.com/product/5122)
+- [Pololu #4762 encoder cable](https://www.pololu.com/product/4762)
 
-- [Seeed XIAO ESP32-S3 Documentation](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
-- [Waveshare 2-inch LCD Documentation](https://www.waveshare.com/wiki/2inch_LCD_Module)
-- [DRV8830 Motor Driver](https://www.ti.com/product/DRV8830)
-- [BQ24074 Battery Charger](https://www.ti.com/product/BQ24074)
-- [MAX17048 Fuel Gauge](https://www.analog.com/en/products/max17048.html)
+**Firmware and local AI**
 
-### Firmware and Software
-
-- [Xiaozhi ESP32 Firmware](https://github.com/78/xiaozhi-esp32)
+- [Xiaozhi ESP32 firmware](https://github.com/78/xiaozhi-esp32)
 - [Face for Xiaozhi](https://github.com/TechTalkies/Face-for-Xiaozhi)
 - [ESP-IDF](https://github.com/espressif/esp-idf)
+- [M5Unified](https://github.com/m5stack/M5Unified)
+- [M5GFX](https://github.com/m5stack/M5GFX)
 - [llama.cpp](https://github.com/ggml-org/llama.cpp)
-- [Vosk Speech Recognition](https://alphacephei.com/vosk/)
+- [Vosk](https://alphacephei.com/vosk/)
 - [eSpeak NG](https://github.com/espeak-ng/espeak-ng)
-
-## Project Image
-
-![ARC — Autonomous Robotic Companion](hero(1).png)
-
-The current image represents the preliminary design concept of ARC.
-
-The image will be updated as the physical robot is developed and assembled.
-
-The project cover image is stored as `hero.png` in the root directory so that it can be displayed on the AMP Lab project website.
 
 ---
 
-**ARC — Autonomous Robotic Companion**
-
-*An open-source robotics project exploring embedded systems, intelligent interaction, mechanical design, and locally hosted AI.*
+**ARC — Autonomous Robotic Companion**  
+*An engineering project in expressive embedded robotics, real tracked locomotion, 3D printing, and local-first AI.*
